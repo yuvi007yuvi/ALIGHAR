@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ward Boundary Checker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --nav-height: 60px;
+            --primary-color: #4a90e2;
+            --success-color: #34c759;
+            --error-color: #ff3b30;
+            --bg-color: #ffffff;
+            --panel-bg: #f8f9fa;
+            --border-color: #e1e4e8;
+            --text-color: #2c3e50;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+        }
+
+        nav {
+            height: var(--nav-height);
+            background-color: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+            gap: 12px;
+        }
+
+        .nav-logo {
+            height: 70px;
+        }
+
+        .nav-title {
+            color: purple;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        #container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - var(--nav-height));
+            width: 100%;
+            margin-top: var(--nav-height);
+        }
+
+        #map {
+            flex: 1;
+            width: 100%;
+            height: 50vh;
+            box-shadow: var(--shadow);
+            z-index: 1;
+        }
+
+        #info-panel {
+            padding: 16px;
+            background-color: var(--panel-bg);
+            border-top: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            height: auto;
+            min-height: 200px;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        #info-panel h2 {
+            margin: 0 0 16px 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        #file-input {
+            margin: 12px 0;
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg-color);
+            font-size: 16px;
+        }
+
+        #locate-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            min-height: 48px;
+        }
+
+        @media (min-width: 768px) {
+            #container {
+                flex-direction: row;
+            }
+
+            #map {
+                flex: 2;
+                height: 100vh;
+            }
+
+            #info-panel {
+                flex: 1;
+                max-width: 350px;
+                padding: 24px;
+                height: 100vh;
+                max-height: none;
+                border-top: none;
+                border-left: 1px solid var(--border-color);
+            }
+
+            #info-panel h2 {
+                font-size: 1.5rem;
+                margin: 0 0 20px 0;
+            }
+        }
+
+        .error {
+            color: var(--error-color);
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: rgba(255, 59, 48, 0.1);
+            font-size: 14px;
+        }
+
+        .success {
+            color: var(--success-color);
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: rgba(52, 199, 89, 0.1);
+            font-size: 14px;
+        }
+
+        #locate-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 12px 0;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #locate-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+        }
+
+        #locate-btn:disabled {
+            background-color: #a0a5aa;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #file-input:hover {
+            border-color: var(--primary-color);
+        }
+
+        .footer {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+            font-size: 12px;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        .footer p {
+            margin: 4px 0;
+        }
+
+        .footer .attribution a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .footer .attribution a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <img src="logo.jpeg" alt="Logo" class="nav-logo">
+        <span class="nav-title">Safaimitra</span>
+    </nav>
+    <div id="container">
+        <div id="map"></div>
+        <div id="info-panel">
+            <h2>Ward Boundary Checker</h2>
+            <div>
+                <p>Upload GeoJSON file with ward boundaries:</p>
+                <input type="file" id="file-input"
+                    accept=".geojson,.kml,application/json,application/vnd.google-earth.kml+xml">
+            </div>
+            <div>
+                <p>Or check by coordinates:</p>
+                <input type="number" id="lat-input" placeholder="Latitude" step="any" style="margin: 8px 0; padding: 12px; width: 100%; border: 2px solid var(--border-color); border-radius: 8px;">
+                <input type="number" id="lng-input" placeholder="Longitude" step="any" style="margin: 8px 0; padding: 12px; width: 100%; border: 2px solid var(--border-color); border-radius: 8px;">
+            </div>
+            <button id="locate-btn" disabled>Find My Ward</button>
+            <button id="check-coords-btn" disabled style="width: 100%; padding: 16px; font-size: 16px; min-height: 48px; background-color: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; margin: 12px 0; font-weight: 500; transition: all 0.2s ease; box-shadow: var(--shadow);">Check Coordinates</button>
+            <div id="status"></div>
+            <footer class="footer">
+                <p>© 2024 Ward Boundary Checker</p>
+                <p class="attribution">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank"
+                        rel="noopener">OpenStreetMap</a> contributors</p>
+            </footer>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
